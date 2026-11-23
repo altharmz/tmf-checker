@@ -25,6 +25,12 @@ All notable changes are listed here. The format follows
   `polymorphism`, `patch-formats` and `patch`; `roundtrip` one level into objects.
 - `--html FILE` report; `--allow-orders` (orders are not created without it).
 
+### Changed
+
+- `openapi-schema-validator` is no longer a dependency (nine fewer packages, no pydantic).
+  Validation results are unchanged, except that a `date-time` with a trailing newline is
+  now invalid.
+
 ### Fixed
 
 - The validator accepts a TMF630 extension subtype inside a `...RefOrValue` (an unknown

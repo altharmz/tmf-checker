@@ -1,19 +1,23 @@
 """Validate JSON bodies against a TMF spec's schemas.
 
-Built on openapi-schema-validator's OAS 3.0 dialect (for `nullable` and friends), with its
-discriminator handling replaced, because the stock behaviour fails on TMF specs:
+Built on jsonschema's Draft 4 validator (what OAS 3.0 and Swagger 2.0 schemas extend) plus
+the OAS 3.0 keywords that change validation, with TMF-aware discriminator handling:
 
-- The library dispatches on a `discriminator` that sits next to `allOf`. Every TMF v5 schema
-  has one that maps its own name to itself, so that dispatch recurses forever. Here
-  `allOf`/`anyOf` are plain JSON Schema; such a discriminator only declares that subclasses
-  may exist.
+- `nullable: true` admits `null` (OAS 3.0.3). A required property marked `readOnly` or
+  `writeOnly` may be absent, as in openapi-schema-validator, which this replaced. Other OAS
+  keywords (`discriminator` outside `oneOf`, `example`, `xml`, ...) are annotations.
+- A `discriminator` next to `allOf` is not dispatched on. Every TMF v5 schema has one that
+  maps its own name to itself, so dispatching recurses forever (stock OAS validators do).
+  Here `allOf`/`anyOf` are plain JSON Schema; such a discriminator only declares that
+  subclasses may exist.
 - Plain JSON Schema cannot validate the `...RefOrValue` schemas: they are a `oneOf` of two
   permissive schemas, so a plain reference matches both branches. Here a `oneOf` with a
   discriminator validates only the branch that `@type` selects. A subclass `@type` outside
   the mapping (the TMF630 extension pattern) is validated as the branch its `@baseType`
   names.
 
-`date-time` values are format-checked (RFC 3339, as OAS specifies); no other format is,
+`date-time` values are format-checked (RFC 3339 section 5.6, as OAS specifies; leap seconds
+are refused, the `T` and `Z` may be lower case); no other format is,
 because TMF formats such as `uri` are used loosely and a false positive costs more than a
 missed gap.
 
@@ -25,13 +29,13 @@ tests/test_validate.py proves each statement.
 
 from __future__ import annotations
 
+import calendar
 import re
 from dataclasses import dataclass, field
 from functools import cache
 from typing import Any
 
 from jsonschema import Draft4Validator, FormatChecker, ValidationError, validators
-from openapi_schema_validator import OAS30Validator
 from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT4
 
@@ -65,14 +69,50 @@ def _one_of(validator, one_of, instance, schema):
     yield from validator.descend(instance, {"$ref": ref})
 
 
+def _type(validator, types, instance, schema):
+    if instance is None and schema.get("nullable") is True:
+        return
+    yield from Draft4Validator.VALIDATORS["type"](validator, types, instance, schema)
+
+
+def _required(validator, required, instance, schema):
+    if not validator.is_type(instance, "object"):
+        return
+    properties = schema.get("properties", {})
+    for name in required:
+        prop = properties.get(name)
+        exempt = isinstance(prop, dict) and (prop.get("readOnly") or prop.get("writeOnly"))
+        if name not in instance and not exempt:
+            yield ValidationError(f"{name!r} is a required property")
+
+
+def _format(validator, format, instance, schema):
+    if instance is not None:
+        yield from Draft4Validator.VALIDATORS["format"](validator, format, instance, schema)
+
+
 TmfValidator = validators.extend(
-    OAS30Validator,
-    validators={
-        "oneOf": _one_of,
-        "allOf": Draft4Validator.VALIDATORS["allOf"],
-        "anyOf": Draft4Validator.VALIDATORS["anyOf"],
-    },
+    Draft4Validator,
+    validators={"oneOf": _one_of, "type": _type, "required": _required, "format": _format},
 )
+
+_DATE_TIME = re.compile(
+    r"(\d{4})-(0[1-9]|1[0-2])-(\d{2})T([01]\d|2[0-3]):[0-5]\d:[0-5]\d(\.\d+)?"
+    r"(Z|[+-]([01]\d|2[0-3]):[0-5]\d)",
+    re.ASCII,
+)
+_FORMATS = FormatChecker(formats=())
+
+
+@_FORMATS.checks("date-time")
+def _is_date_time(instance: object) -> bool:
+    if not isinstance(instance, str):
+        return True
+    m = _DATE_TIME.fullmatch(instance.upper())
+    if m is None:
+        return False
+    year, month, day = int(m[1]), int(m[2]), int(m[3])
+    return year > 0 and 1 <= day <= calendar.monthrange(year, month)[1]
 
 
 @cache
@@ -84,7 +124,7 @@ def _validator(spec: Spec, schema: str) -> Draft4Validator:
     return TmfValidator(
         {"$ref": f"{uri}{spec.schemas_pointer}/{schema}"},
         registry=registry,
-        format_checker=FormatChecker(formats=("date-time",)),
+        format_checker=_FORMATS,
     )
 
 
