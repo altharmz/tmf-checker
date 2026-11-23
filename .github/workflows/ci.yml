@@ -30,3 +30,60 @@ jobs:
       - name: Bundled specs unchanged
         working-directory: src/tmf_checker/specs
         run: sha256sum -c --quiet SHA256SUMS
+
+  action:
+    # the composite action end to end, against the test stub
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.4.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked
+      - name: Start stubs (conformant, and with href gaps)
+        run: |
+          nohup uv run python -m tests.serve --api TMF620 --url-file clean.url > clean.log 2>&1 &
+          nohup uv run python -m tests.serve --api TMF620 --url-file gaps.url \
+            --gap 'href="urn"' > gaps.log 2>&1 &
+          for i in $(seq 60); do [ -s clean.url ] && [ -s gaps.url ] && break; sleep 1; done
+          echo "CLEAN=$(cat clean.url)" >> "$GITHUB_ENV"
+          echo "GAPS=$(cat gaps.url)" >> "$GITHUB_ENV"
+      - name: Conformant API passes
+        uses: ./
+        with:
+          base-url: ${{ env.CLEAN }}
+          api: TMF620
+          headers: |
+            X-Test: 1
+          artifact-name: clean-report
+      - name: Gaps fail the step
+        id: gaps
+        continue-on-error: true
+        uses: ./
+        with:
+          base-url: ${{ env.GAPS }}
+          api: TMF620
+          artifact-name: gaps-report
+      - name: Locked gaps pass with a baseline
+        uses: ./
+        with:
+          base-url: ${{ env.GAPS }}
+          api: TMF620
+          baseline: baseline.txt
+          args: --update-baseline
+          upload-report: "false"
+      - run: test -s baseline.txt
+      - name: Baseline holds
+        uses: ./
+        with:
+          base-url: ${{ env.GAPS }}
+          api: TMF620
+          baseline: baseline.txt
+          upload-report: "false"
+      - name: Check outcomes
+        env:
+          OUTCOME: ${{ steps.gaps.outcome }}
+          CODE: ${{ steps.gaps.outputs.exit-code }}
+        run: |
+          test "$OUTCOME" = failure && test "$CODE" = 1
+          grep -q "href not-a-url" baseline.txt
