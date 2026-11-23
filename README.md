@@ -30,7 +30,7 @@ certification.
 ## Install
 
 ```sh
-pip install git+https://github.com/altharmz/tmf-checker   # no PyPI release yet
+pip install tmf-checker        # or: uvx tmf-checker ...
 ```
 
 Python 3.12 or newer.
