@@ -138,3 +138,17 @@ def test_class_scoped_preferred_values():
         customer = values.minimal(_create(spec, "/billingAccount"))
     assert owner["relatedParty"][0]["role"] == "owner"
     assert customer["relatedParty"][0]["role"] == "customer"
+
+
+def test_a_reference_points_only_at_the_class_it_names():
+    """FIWARE TMF637: `ProductOfferingRef` was pointed at a created Product (a substring
+    match), and the server rightly refused the reference."""
+    values = Values(Spec.bundled("TMF637", 4), "t", extra_classes=["ProductOffering"])
+    assert values.targets("ProductOfferingRef") == ["ProductOffering"]
+    assert values.targets("ProductSpecificationRef") == []
+    assert values.targets("ProductRefOrValue") == ["Product"]
+    tmf620 = Values(Spec.bundled("TMF620", 5), "t", extra_classes=["Party", "PartyRole"])
+    assert "ProductOffering" not in tmf620.targets("ProductOfferingPriceRef")
+    assert tmf620.targets("ProductOfferingPriceRef") == ["ProductOfferingPrice"]
+    assert tmf620.targets("BundledProductOffering") == ["ProductOffering"]
+    assert tmf620.targets("RelatedPartyRefOrPartyRoleRef") == ["PartyRole", "Party"]
