@@ -10,6 +10,9 @@ reported.
 It does not look into references or `...RefOrValue` unions (a reference's optional
 fields are not the server's to fill), and skips what `roundtrip` already reported
 (`unprobed`, `refused`, `dropped`, `server-error`): that absence is explained there.
+One level in, it reads only values the server built: a value this run sent (by POST or
+PATCH) lacks what the run left out, and `roundtrip` already compared it with what was
+sent.
 
 This is a claim about the data as much as about the server: a catalog that never set an
 attribute looks the same as a server that cannot return it. So it runs only when asked
@@ -49,11 +52,13 @@ def run(ctx: Context, resource: Resource) -> Iterator[Finding]:
         yield ctx.finding("GET", resource.item, "skipped", "missing no-items")
         return
     bodies = []
+    sent: list[set[str]] = []  # per body, the attributes this run sent it
     for resource_id in ids:
         response = ctx.client.get(item_path(resource, resource_id))
         check_auth(response)
         if response.ok and isinstance(response.json(), dict):
             bodies.append(response.json())
+            sent.append(ctx.sent.get((resource.collection, resource_id), set()))
     if not bodies:
         return
     spec = ctx.spec
@@ -66,8 +71,14 @@ def run(ctx: Context, resource: Resource) -> Iterator[Finding]:
             if (resource.collection, name) not in ctx.explained:
                 yield ctx.finding("GET", resource.item, "missing", name, sampled=len(bodies))
             continue
-        # present (perhaps set by the server): look one level in even if it was refused
-        nested = _objects(returned)
+        # present (perhaps set by the server): look one level in even if it was refused,
+        # but only into values the server built, not ones this run sent
+        built = [
+            b[name]
+            for b, s in zip(bodies, sent, strict=True)
+            if b.get(name) is not None and name not in s
+        ]
+        nested = _objects(built)
         if not nested:
             continue
         for sub in _nested_props(ctx, schema):

@@ -52,12 +52,24 @@ class Context:
     allow_orders: bool = False
     listings: dict[str, Listing] = field(default_factory=dict)
     created: list[tuple[Resource, str]] = field(default_factory=list)
+    # (collection, id) -> top-level attributes this run sent it, by POST or PATCH
+    sent: dict[tuple[str, str], set[str]] = field(default_factory=dict)
     fixtures: dict[str, dict[str, Any]] = field(default_factory=dict)  # class -> resource
     preferred: dict[str, Any] = field(default_factory=dict)  # property name -> value
     creations: dict[str, Any] = field(default_factory=dict)  # collection -> create.Creation
     building: set[str] = field(default_factory=set)  # fixtures being created (cycle guard)
     # (collection, attribute path) a write check already reported: missing skips them
     explained: set[tuple[str, str]] = field(default_factory=set)
+
+    def record_sent(self, collection: str, resource_id: str, body: Any) -> None:
+        if isinstance(body, dict):
+            names = set(body)
+        elif isinstance(body, list):  # JSON Patch: /attr/...
+            names = {str(op.get("path", "")).split("/")[1] for op in body if isinstance(op, dict)}
+            names.discard("")
+        else:
+            return
+        self.sent.setdefault((collection, resource_id), set()).update(names)
 
     def finding(
         self,

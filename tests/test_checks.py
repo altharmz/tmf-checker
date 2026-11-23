@@ -479,3 +479,22 @@ def test_required_object_attributes_are_probed_one_level_in():
     nested = [line for line in lines if " productOrderItem." in line]
     assert nested and all(" unprobed " in line for line in nested)
     assert "TMF620 POST /productOrder unprobed productOrderItem.state server-managed" in lines
+
+
+def test_missing_does_not_read_one_level_into_values_the_run_sent(tmf620):
+    """A value the run sent lacks what the run left out: not the server's gap (FIWARE
+    returned `pricingLogicAlgorithm` exactly as sent, without `href`). A value the server
+    built is still read (test above)."""
+    lines, _ = probe(
+        tmf620, checks=("missing", "roundtrip"), writes=True, resource="productOfferingPrice"
+    )
+    assert not any("missing pricingLogicAlgorithm.href" in line for line in lines)
+    # the same value, built by the server without href, is the server's gap
+    gaps = Gaps(
+        refuse={"pricingLogicAlgorithm"},
+        server_sets={"pricingLogicAlgorithm": [{"id": "1", "name": "per minute"}]},
+    )
+    lines, _ = probe(
+        tmf620, gaps, checks=("missing", "roundtrip"), writes=True, resource="productOfferingPrice"
+    )
+    assert "TMF620 GET /productOfferingPrice/{id} missing pricingLogicAlgorithm.href" in lines
