@@ -3,7 +3,7 @@
 
 import pytest
 
-from tests.conftest import probe
+from tests.conftest import probe, seed
 from tests.stub import Gaps
 from tmf_checker.spec import Spec
 
@@ -11,6 +11,7 @@ ALL = (
     "errors",
     "lists",
     "fields",
+    "filters",
     "location",
     "requires",
     "roundtrip",
@@ -57,6 +58,9 @@ READ_GAPS = [
     (Gaps(ignore_fields=True), f"{LIST} fields-ignored list"),
     (Gaps(ignore_fields=True), f"{ITEM} fields-ignored by-id"),
     (Gaps(drop_selected_field=True), f"{ITEM} fields-dropped by-id"),
+    (Gaps(filters="ignore"), f"{LIST} filter-ignored equality"),
+    (Gaps(filters="refuse"), f"{LIST} filter-refused equality"),
+    (Gaps(filters="empty"), f"{LIST} filter-empty equality"),
     (Gaps(null_unset=("version",)), f"{LIST} null-value version"),
     (Gaps(href="urn"), f"{LIST} href not-a-url"),
     (Gaps(href="other"), f"{LIST} href not-the-item"),
@@ -96,6 +100,40 @@ def test_paging_needs_two_items(tmf620):
 def test_fields_needs_an_item(tmf620):
     lines, _ = probe(tmf620, count=0)
     assert f"{LIST} skipped fields no-items" in lines
+
+
+def test_filters_need_two_values(tmf620):
+    lines, _ = probe(tmf620, Gaps(filters="ignore"), count=1)
+    assert f"{LIST} skipped filters no-distinct-values" in lines
+    assert not any("filter-" in line for line in lines)
+
+
+def test_filters_send_the_value_a_listed_item_has(tmf620):
+    _, stub = probe(tmf620, checks=("filters",))
+    assert ("GET", "/api/productOffering?name=seed-0") in stub.requests
+
+
+def test_filters_avoid_values_with_a_meaning(tmf620):
+    """`,` lists alternatives in TMF630 and date-times may be normalised: never sent."""
+
+    def rename(stub):
+        for i, obj in enumerate(stub.store["productOffering"].values()):
+            obj["name"] = f"a,b{i}" if i else "2026-01-01"
+
+    lines, stub = probe(tmf620, Gaps(filters="ignore"), checks=("filters",), before=rename)
+    assert f"{LIST} skipped filters no-distinct-values" in lines
+    assert not any("?" in path for _, path in stub.requests[1:])
+
+
+def test_filters_do_not_judge_case_or_absent_attributes(tmf620):
+    """A case-insensitive match and an item without the attribute are not reported."""
+
+    def add(stub):
+        seed(stub, "productOffering", 1, name="SEED-0")
+        del seed(stub, "productOffering", 1, name="seed-0")[0]["name"]
+
+    lines, _ = probe(tmf620, Gaps(filters="lenient"), checks=("filters",), before=add)
+    assert gaps_only(lines) == []
 
 
 def test_unknown_id_is_shaped_like_a_real_one(tmf620):

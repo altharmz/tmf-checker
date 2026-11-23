@@ -35,6 +35,9 @@ class Gaps:
     ignore_offset: bool = False
     ignore_fields: bool = False
     drop_selected_field: bool = False
+    # equality filters ?attr=value: None (applied), "ignore", "refuse" (400), "empty",
+    # "lenient" (case-insensitive, and items without the attribute pass: not judged)
+    filters: str | None = None
     null_unset: tuple[str, ...] = ()  # attributes returned as null when unset
     bad_dates: bool = False  # lastUpdate without a timezone
     # href style: None (absolute URL), "relative", "other-host" (conformant); "urn" (the URN
@@ -176,7 +179,23 @@ class _Handler(BaseHTTPRequestHandler):
                 return
             self._send(200, stub.view(obj, fields))
             return
-        items = [stub.view(o, fields) for o in stub.store[collection].values()]
+        objs = list(stub.store[collection].values())
+        wanted = {k: v[0] for k, v in query.items() if k not in ("fields", "offset", "limit")}
+        if wanted and stub.gaps.filters == "refuse":
+            self._send(*stub.error(400, "Unknown query parameter"))
+            return
+        if wanted and stub.gaps.filters != "ignore":
+            lenient = stub.gaps.filters == "lenient"
+
+            def match(o: dict[str, Any], k: str, v: str) -> bool:
+                if k not in o:
+                    return lenient
+                return str(o[k]).casefold() == v.casefold() if lenient else str(o[k]) == v
+
+            objs = [o for o in objs if all(match(o, k, v) for k, v in wanted.items())]
+            if stub.gaps.filters == "empty":
+                objs = []
+        items = [stub.view(o, fields) for o in objs]
         total = len(items)
         offset = int(query.get("offset", ["0"])[0])
         limit = query.get("limit", [None])[0]

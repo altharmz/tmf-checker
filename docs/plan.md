@@ -103,6 +103,23 @@ so gaps are found by reading back:
 | **M3 launch** (done 2026-11-23, `v0.1.0` on PyPI) | Public repo, `v0.1.0` tag, PyPI via trusted publishing, a composite GitHub Action, README with a sample report, FIWARE results published after notifying them | Release out |
 | **M4 later** | Hub registration and event payloads (local listener), user-supplied conformance profile, more APIs, TMF630 filters | — |
 
+### M4 task list (started 2026-11-23)
+
+Order chosen by the human: TMF630 filters first, then a user-supplied conformance profile;
+hub events, more APIs and the robustness check after.
+
+- [ ] `filters` (branch `m4-filters`): equality filter `?attr=value` only, read-only, in the
+      default read set. The attribute is a top-level string of the resource schema with two
+      different values in the listed items (else `skipped filters no-distinct-values`), so
+      an ignored filter is visible on the same page. **Decision:** comma lists (`a,b` as
+      OR), operators (`.gt`, `.lte`) and `sort` are left out. TMF630's text is behind the
+      TM Forum login and no public source settled their syntax; "the OAS rules, not TMF630
+      folklore". No bundled spec declares a filter parameter (v5 only says "depending on
+      filter criteria"), so the kinds are `filter-*`, not `param-refused`. FIWARE TMF620 v4
+      (fresh database, 3 resources per collection): no line, and its answers to
+      `lifecycleStatus=Active` and `=In Design` were read and are right.
+- [ ] Conformance profile (YAML of mandatory attributes and operations), after `filters`.
+
 ### M1 task list (done 2026-11-22, branch `m1-spike`)
 
 - [x] `client.py` (stdlib, not httpx), `--header`, timeouts, redacted evidence log

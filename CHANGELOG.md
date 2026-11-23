@@ -6,6 +6,12 @@ All notable changes are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Check `filters` (default): an equality filter `?<attr>=<value>` on a list returns only
+  resources with that value (TMF630). New kinds `filter-refused`, `filter-ignored` and
+  `filter-empty`. Existing baselines may see new lines from it; exclude it with `--checks`.
+
 ## [0.1.0] - 2026-11-23
 
 ### Added
