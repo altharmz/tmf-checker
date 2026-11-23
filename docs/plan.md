@@ -100,7 +100,7 @@ so gaps are found by reading back:
 | **M0** (done) | Repo, licence, NOTICE, CI, 10 specs with provenance, loader, validator, CLI `specs`/`operations`/`validate`, tests | `make check` green; pushed (private) |
 | **M1 spike** (done, go/no-go below) | `client.py`, `findings.py`, `values.py`; read-only checks `errors`, `lists`, `fields`, response validation; `roundtrip` and `location` for TMF620 (no cross-API dependencies); `run` with text and JSON output; tests against a small stub server | **Go/no-go:** run against FIWARE TMF620 v4 and a private v5 implementation. Go if it finds real, non-trivial gaps the FIWARE maintainers confirm |
 | **M2** (done, exit below) | Fixtures and write checks for TMF622, 637, 666, 678; `patch-formats`, `requires`, `polymorphism`; baseline compare and update; HTML report | Against a private v5 implementation, reproduces its own locked gap list (below) or explains each difference |
-| **M3 launch** | Public repo, `v0.1.0` tag, PyPI via trusted publishing, a composite GitHub Action, README with a sample report, FIWARE results published after notifying them | Release out |
+| **M3 launch** (done 2026-11-23, `v0.1.0` on PyPI) | Public repo, `v0.1.0` tag, PyPI via trusted publishing, a composite GitHub Action, README with a sample report, FIWARE results published after notifying them | Release out |
 | **M4 later** | Hub registration and event payloads (local listener), user-supplied conformance profile, more APIs, TMF630 filters | — |
 
 ### M1 task list (done 2026-11-22, branch `m1-spike`)
@@ -169,7 +169,7 @@ holds for the two private-target findings, which its own in-process probe missed
 error body. **Open:** the FIWARE maintainers have not confirmed anything; contacting them
 is the human's call (draft an issue for the error body and `Location`).
 
-### M3 task list (next)
+### M3 task list (done 2026-11-23)
 
 Decisions taken (the human, 2026-11-23):
 - **Contact FIWARE:** yes. Filed
@@ -190,29 +190,24 @@ Decisions taken (the human, 2026-11-23):
   new public `altharmz/tmf-checker` starts from one squashed commit of the scrubbed tree,
   with the same merge settings. Commits use the GitHub noreply address.
 
-Done in M3 so far (2026-11-23), ticked here so the checklist below merges with parallel PRs:
-`v0.1.0` (version, CHANGELOG section, `make build` checked); the release workflow
-(`.github/workflows/release.yml`: a `v*` tag runs the tests, checks the tag equals
-`__version__`, builds, publishes from environment `pypi` by trusted publishing, and makes a
-GitHub release with the CHANGELOG section; the PyPI pending publisher is the human's step,
-then the tag is pushed); the composite Action (installs from its own ref, so no PyPI needed;
-tested end to end in CI against `tests/serve.py`); the README (FIWARE sample report linked
-to their issue, the fixtures file, the Action).
-
-Work:
-- [ ] FIWARE TMF637/666 v4 runs (images `quay.io/fiware/tmforum-product-inventory:2.2.1`,
-      `tmforum-account:2.2.1`; quay's CDN failed on 2026-11-22, retry).
-- [ ] `v0.1.0`: version bump, CHANGELOG release section, `make build` check.
-- [ ] PyPI via trusted publishing (a release workflow; the PyPI project needs the human).
-- [ ] Composite GitHub Action (`action.yml`): install, `run` with a baseline, upload the
-      HTML report.
-- [ ] README: a sample report (FIWARE TMF620, after notifying them), the fixtures file.
+Work (all done 2026-11-23):
+- [x] FIWARE TMF637/666 v4 runs: results in "FIWARE TMF637 and TMF666 v4" below.
+- [x] `v0.1.0`: version bump, CHANGELOG release section, `make build` check.
+- [x] PyPI via trusted publishing: `.github/workflows/release.yml` (a `v*` tag runs the
+      tests, checks the tag equals `__version__`, builds, publishes from environment
+      `pypi`, and makes a GitHub release with the CHANGELOG section). The human set up the
+      pending publisher; the tag `v0.1.0` published https://pypi.org/project/tmf-checker/
+      0.1.0, checked with `uvx --from tmf-checker==0.1.0`.
+- [x] Composite GitHub Action (`action.yml`): installs from its own ref, runs with a
+      baseline, uploads the HTML report; tested end to end in CI against `tests/serve.py`.
+- [x] README: a sample report (FIWARE TMF620, linked to FIWARE/tmforum-api#189), the
+      fixtures file, the Action.
 - [x] `missing` false positive: a nested attribute of a value the run itself sent without
       it (FIWARE `pricingLogicAlgorithm.href`) is not the server's gap. `Context.sent`
       records the top-level attributes each created resource was sent (POST and PATCH);
       `missing` reads one level into the other values only. The stub reproduced the two
       FIWARE lines before the fix.
-- [ ] Not started, candidates: a robustness check (a 5xx for a spec-valid body; FIWARE
+- [ ] Not started, candidates for M4: a robustness check (a 5xx for a spec-valid body; FIWARE
       answered 500 to a v4 `bundledProductOffering` without `id`), `missing` on TMF678
       with real bills (needs a target with billing history).
 
