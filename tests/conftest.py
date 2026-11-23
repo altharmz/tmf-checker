@@ -31,11 +31,14 @@ def probe(
     headers: dict | None = None,
     orders: bool = False,
     fixtures: dict | None = None,
+    before=None,
     **extra,
 ) -> tuple[list[str], Stub]:
     """Run checks on one resource of a stub seeded with `count` items; the finding lines."""
     with serve(spec, gaps) as stub:
         seed(stub, resource, count, description="seeded", **extra)
+        if before:
+            before(stub)
         ctx = Context(
             "TMF620",
             spec,

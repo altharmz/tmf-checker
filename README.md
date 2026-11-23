@@ -15,7 +15,7 @@ JSON. What integrators trip over is behaviour:
 
 - an attribute is accepted on POST but never comes back, or comes back rewritten;
 - the server requires attributes the spec leaves optional;
-- `fields=` projections, paging headers and `Location` do not follow the TMF API design
+- `fields=` projections, equality filters, paging headers and `Location` do not follow the TMF API design
   guidelines (TMF630);
 - non-2xx responses are not the TMF `Error` body;
 - PATCH content types listed in the spec are refused.
@@ -80,7 +80,7 @@ TMF620 POST /productOffering location missing
 TMF620 POST /productOffering unprobed agreement no-fixture
 ```
 
-`--base-url` is always the full API root. Checks: `errors`, `lists`, `fields` (default);
+`--base-url` is always the full API root. Checks: `errors`, `lists`, `fields`, `filters` (default);
 `location`, `requires`, `roundtrip`, `polymorphism`, `patch-formats`, `patch` (with
 `--allow-writes`; orders also need `--allow-orders`); `missing` (opt-in). What each sends and
 reports: [docs/checks.md](docs/checks.md). A check that cannot judge prints a `skipped` or

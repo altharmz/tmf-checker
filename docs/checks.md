@@ -21,6 +21,7 @@ cancellations and on-demand bills are never created.
 | `errors` | GET of an unknown id (a real id with a suffix, so syntax checks pass); with writes, a POST of malformed JSON | `error-status`, `error-body` | 404 / 400 with the spec's `Error` resource (v5: `@type: Error`) | no (the POST: yes) |
 | `lists` | GET of the collection, GET by id of the first 3 items, `limit=1`, `offset=1&limit=1` | `unimplemented`, `list-body`, `invalid`, `null-value`, `count-header`, `href`, `param-refused`, `paging-ignored`, `error-status listed-id` | Items validate against the resource schema (incl. `date-time`); count headers agree when present (spec-quirks #14); `href` is an http(s) URL of the item (TMF630); paging works (needs 2 items) | no |
 | `fields` | `fields=<attr>` on the list and by id, for an attribute the first item has | `fields-ignored`, `fields-dropped`, `param-refused` | TMF630: only the selection plus `id`, `href` and `@`-attributes | no |
+| `filters` | `<attr>=<value>` on the list, for a top-level string attribute the schema defines and two listed items hold different values of, with the first item's value | `filter-refused`, `filter-ignored`, `filter-empty`, `list-body` | TMF630 equality filter: only resources with that value come back, and the item that has it is not lost. Not sent: values with `,` (alternatives), `.` or operators, date-times. Not judged: items without the attribute, values differing only in case. Comma lists, operators and `sort` are not checked yet | no |
 | `missing` | GET by id of up to 20 listed items and of everything the run created | `missing` (`a`, or `a.b` one level into a value object) | An attribute the schema defines never comes back. **Opt-in** (`--checks missing`): see below | no |
 | `location` | the base create | `create-status`, `location` | 201 with a `Location` equal to the new resource's `href` (TMF630; no spec declares it: spec-quirks #10). `202` skips with `async` | yes |
 | `requires` | the base create; when refused, discovery (below) | `requires`, `create-status` | The server must not require what the spec leaves optional | yes |
@@ -63,6 +64,7 @@ A check that cannot judge says why, as a `skipped <check> <reason>` or an
 | `state-machine` | `state`/`status` are not PATCHed: a refusal may be a transition rule |
 | `server-managed` | a nested `state`, `status` or date is never sent as an extra |
 | `sibling-reference` | a nested `...Relationship` that names another part of the same body |
+| `no-distinct-values` | `filters`: no attribute with two different usable values in the listed items, so an ignored filter could not be seen |
 | `fewer-than-2-items`, `no-items` | not enough data to judge paging, projections or `missing` |
 | `task-resource`, `orders-not-allowed` | see the top of this page |
 | `async` | the server answered 202 |

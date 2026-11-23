@@ -10,6 +10,7 @@ from tmf_checker.checks import (
     create,
     errors,
     fields,
+    filters,
     lists,
     missing,
     patch,
@@ -24,6 +25,7 @@ CHECKS: dict[str, tuple[CheckFn, bool]] = {
     "errors": (errors.run, False),
     "lists": (lists.run, False),
     "fields": (fields.run, False),
+    "filters": (filters.run, False),
     "missing": (missing.run, False),
     "location": (create.run_location, True),
     "requires": (create.run_requires, True),
@@ -32,7 +34,7 @@ CHECKS: dict[str, tuple[CheckFn, bool]] = {
     "patch-formats": (patch.run_formats, True),
     "patch": (patch.run_patch, True),
 }
-DEFAULT_READ = ("errors", "lists", "fields")  # `missing` is opt-in: see its docstring
+DEFAULT_READ = ("errors", "lists", "fields", "filters")  # `missing` is opt-in: see its docstring
 DEFAULT_WRITE = ("location", "requires", "roundtrip", "polymorphism", "patch-formats", "patch")
 
 
