@@ -190,6 +190,15 @@ Decisions taken (the human, 2026-11-23):
   new public `altharmz/tmf-checker` starts from one squashed commit of the scrubbed tree,
   with the same merge settings. Commits use the GitHub noreply address.
 
+Done in M3 so far (2026-11-23), ticked here so the checklist below merges with parallel PRs:
+`v0.1.0` (version, CHANGELOG section, `make build` checked); the release workflow
+(`.github/workflows/release.yml`: a `v*` tag runs the tests, checks the tag equals
+`__version__`, builds, publishes from environment `pypi` by trusted publishing, and makes a
+GitHub release with the CHANGELOG section; the PyPI pending publisher is the human's step,
+then the tag is pushed); the composite Action (installs from its own ref, so no PyPI needed;
+tested end to end in CI against `tests/serve.py`); the README (FIWARE sample report linked
+to their issue, the fixtures file, the Action).
+
 Work:
 - [ ] FIWARE TMF637/666 v4 runs (images `quay.io/fiware/tmforum-product-inventory:2.2.1`,
       `tmforum-account:2.2.1`; quay's CDN failed on 2026-11-22, retry).

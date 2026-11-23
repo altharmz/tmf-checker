@@ -6,6 +6,8 @@ All notable changes are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-23
+
 ### Added
 
 - TMF620, TMF622, TMF637, TMF666 and TMF678 specs, v4 and v5, with upstream provenance.
@@ -24,6 +26,9 @@ All notable changes are listed here. The format follows
 - Checks `requires` (names each attribute the server requires and the spec does not),
   `polymorphism`, `patch-formats` and `patch`; `roundtrip` one level into objects.
 - `--html FILE` report; `--allow-orders` (orders are not created without it).
+- A composite GitHub Action (`action.yml`): run with a baseline, headers from secrets, and
+  the HTML report uploaded as an artifact.
+- A release workflow: a `v*` tag publishes to PyPI by trusted publishing.
 
 ### Changed
 

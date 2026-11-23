@@ -1,0 +1,103 @@
+name: tmf-checker
+description: Check a TMF Open API implementation against the published spec over HTTP, with a baseline
+author: altharmz
+branding:
+  icon: check-circle
+  color: blue
+
+inputs:
+  base-url:
+    description: Full API root of the implementation under test
+    required: true
+  api:
+    description: "Bundled API, e.g. TMF620 (or use `spec`)"
+    required: false
+    default: ""
+  major:
+    description: Major version of the bundled spec (4 or 5)
+    required: false
+    default: "5"
+  spec:
+    description: Path to a spec file instead of a bundled one
+    required: false
+    default: ""
+  baseline:
+    description: Baseline file; when set, the step fails only on gaps not in it
+    required: false
+    default: ""
+  headers:
+    description: "Extra request headers, one `Name: value` per line (use secrets)"
+    required: false
+    default: ""
+  args:
+    description: "Further `run` arguments, space-separated (e.g. `--allow-writes --fixtures f.yaml`)"
+    required: false
+    default: ""
+  html:
+    description: Path of the HTML report
+    required: false
+    default: tmf-checker-report.html
+  upload-report:
+    description: Upload the HTML report as a workflow artifact
+    required: false
+    default: "true"
+  artifact-name:
+    description: Name of the uploaded artifact
+    required: false
+    default: tmf-checker-report
+  python-version:
+    description: Python version to run with
+    required: false
+    default: "3.12"
+
+outputs:
+  exit-code:
+    description: "tmf-checker's exit code: 0 no (new) gaps, 1 (new) gaps, 2 error"
+    value: ${{ steps.run.outputs.exit-code }}
+
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v10.4.0
+      with:
+        python-version: ${{ inputs.python-version }}
+        enable-cache: false
+
+    - id: run
+      shell: bash
+      env:
+        BASE_URL: ${{ inputs.base-url }}
+        API: ${{ inputs.api }}
+        MAJOR: ${{ inputs.major }}
+        SPEC: ${{ inputs.spec }}
+        BASELINE: ${{ inputs.baseline }}
+        HEADERS: ${{ inputs.headers }}
+        ARGS: ${{ inputs.args }}
+        HTML: ${{ inputs.html }}
+      run: |
+        cmd=(uv tool run --quiet --from "$GITHUB_ACTION_PATH" tmf-checker run
+             --base-url "$BASE_URL" --major "$MAJOR" --html "$HTML")
+        if [ -n "$API" ]; then cmd+=(--api "$API"); fi
+        if [ -n "$SPEC" ]; then cmd+=(--spec "$SPEC"); fi
+        if [ -n "$BASELINE" ]; then cmd+=(--baseline "$BASELINE"); fi
+        while IFS= read -r header; do
+          if [ -n "$header" ]; then cmd+=(--header "$header"); fi
+        done <<< "$HEADERS"
+        read -r -a extra <<< "$ARGS"
+        cmd+=("${extra[@]}")
+        set +e
+        "${cmd[@]}"
+        code=$?
+        set -e
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+
+    - if: always() && inputs.upload-report == 'true' && hashFiles(inputs.html) != ''
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.html }}
+
+    - shell: bash
+      env:
+        CODE: ${{ steps.run.outputs.exit-code }}
+      run: exit "$CODE"

@@ -53,7 +53,24 @@ tmf-checker run ... --baseline tmf-gaps.txt --update-baseline
 tmf-checker run ... --baseline tmf-gaps.txt
 ```
 
-A report looks like this (FIWARE's TMF620 v4, seeded, with writes):
+Write checks on an API that references other APIs (an inventory product needs a billing
+account and an offering) need existing resources to point at. Name them by class in a
+fixtures file; anything without a fixture is reported as `unprobed ... no-fixture`, never
+as a gap:
+
+```yaml
+# fixtures.yaml
+values:                    # preferred values, for servers with a fixed vocabulary
+  role: customer
+Party: {id: "25fa...", "@referredType": Individual}
+BillingAccount: {id: "aca9...", href: "https://host/tmf-api/accountManagement/v5/billingAccount/aca9..."}
+ProductOffering: {id: "6a57..."}
+```
+
+Details: [docs/checks.md](docs/checks.md#values-and-fixtures).
+
+A report looks like this (FIWARE's TMF620 v4 2.2.1, seeded, with writes; reported to FIWARE
+as [tmforum-api#189](https://github.com/FIWARE/tmforum-api/issues/189)):
 
 ```
 TMF620 GET /catalog href not-a-url
@@ -68,6 +85,24 @@ TMF620 POST /productOffering unprobed agreement no-fixture
 `--allow-writes`; orders also need `--allow-orders`); `missing` (opt-in). What each sends and
 reports: [docs/checks.md](docs/checks.md). A check that cannot judge prints a `skipped` or
 `unprobed` line with its reason; it never guesses.
+
+### In GitHub Actions
+
+```yaml
+- uses: altharmz/tmf-checker@v0.1.0
+  with:
+    base-url: https://test-env.example.com/tmf-api/productCatalogManagement/v5
+    api: TMF620
+    baseline: tmf-gaps.txt          # fail only on gaps not in the baseline
+    headers: |
+      Authorization: Bearer ${{ secrets.TMF_TOKEN }}
+    args: --allow-writes --fixtures tmf-fixtures.yaml
+```
+
+The step fails on new gaps (`exit-code` output: 0, 1 or 2) and uploads the HTML report as
+the `tmf-checker-report` artifact. Other inputs: `major`, `spec`, `html`, `upload-report`,
+`artifact-name`, `python-version` ([action.yml](action.yml)). Point it at a test
+environment, never production.
 
 Other commands:
 
