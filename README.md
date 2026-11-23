@@ -82,7 +82,8 @@ TMF620 POST /productOffering unprobed agreement no-fixture
 
 `--base-url` is always the full API root. Checks: `errors`, `lists`, `fields`, `filters` (default);
 `location`, `requires`, `roundtrip`, `polymorphism`, `patch-formats`, `patch` (with
-`--allow-writes`; orders also need `--allow-orders`); `missing` (opt-in). What each sends and
+`--allow-writes`; orders also need `--allow-orders`); `missing` (opt-in); `profile` (with
+`--profile FILE`, your own conformance profile: mandatory operations and attributes). What each sends and
 reports: [docs/checks.md](docs/checks.md). A check that cannot judge prints a `skipped` or
 `unprobed` line with its reason; it never guesses.
 

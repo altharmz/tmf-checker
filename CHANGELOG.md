@@ -11,6 +11,10 @@ All notable changes are listed here. The format follows
 - Check `filters` (default): an equality filter `?<attr>=<value>` on a list returns only
   resources with that value (TMF630). New kinds `filter-refused`, `filter-ignored` and
   `filter-empty`. Existing baselines may see new lines from it; exclude it with `--checks`.
+- `run --profile FILE`: a conformance profile in YAML, per collection: mandatory
+  `operations` (others may be unimplemented: `skipped profile optional-operation`),
+  mandatory `attributes` (new check `profile`, kind `profile-missing`), and `create`
+  attributes a server may require (no `requires` line). See docs/checks.md.
 
 ## [0.1.0] - 2026-11-23
 

@@ -1,6 +1,7 @@
 import pytest
 
 from tests.stub import Gaps, Stub, serve
+from tmf_checker import profile as profiles
 from tmf_checker import runner
 from tmf_checker.checks import Context
 from tmf_checker.client import Client
@@ -32,6 +33,7 @@ def probe(
     orders: bool = False,
     fixtures: dict | None = None,
     before=None,
+    profile: dict | None = None,
     **extra,
 ) -> tuple[list[str], Stub]:
     """Run checks on one resource of a stub seeded with `count` items; the finding lines."""
@@ -47,6 +49,7 @@ def probe(
             allow_writes=writes,
             allow_orders=orders,
             fixtures=fixtures or {},
+            profile=profiles.parse(profile, spec) if profile is not None else None,
         )
         findings = runner.run(ctx, checks, [resource])
         return [f.line for f in findings], stub

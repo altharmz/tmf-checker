@@ -62,6 +62,7 @@ class Gaps:
     ignore_json_patch: bool = False  # JSON Patch answers 200 but changes nothing
     patch_conflict: set[str] = field(default_factory=set)  # 409 when sent on PATCH (state)
     refuse_base_type: bool = False  # 400 when @baseType is sent
+    no_create: bool = False  # POST answers 405
     no_delete: bool = False  # DELETE answers 405
     refuse_referenced_delete: bool = False  # DELETE answers 409 while another resource refers
     cookie: str | None = None  # when set, requests without this Cookie answer 401
@@ -216,6 +217,9 @@ class _Handler(BaseHTTPRequestHandler):
             body = json.loads(raw)
         except ValueError:
             self._send(*stub.error(stub.gaps.malformed_status, "Malformed JSON"))
+            return
+        if stub.gaps.no_create:
+            self._send(*stub.error(405, "Method Not Allowed"))
             return
         if set(body) & stub.gaps.conflict:
             self._send(*stub.error(409, "Conflict"))

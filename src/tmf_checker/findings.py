@@ -31,6 +31,7 @@ KINDS: dict[str, str] = {
     "filter-ignored": "an equality filter returns resources with other values (TMF630)",
     "filter-empty": "an equality filter on a value a listed resource has returns nothing",
     "missing": "an attribute never comes back in any returned resource ('a.b': one level in)",
+    "profile-missing": "a returned resource lacks an attribute the --profile makes mandatory",
     "create-status": "a create with only the spec's required attributes is not a 201",
     "href": "a resource's href is not a URL of that resource (TMF630)",
     "location": "a 201 has no Location header, or it is not the new resource's href",

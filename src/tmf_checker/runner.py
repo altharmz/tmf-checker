@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Iterator
+from dataclasses import replace
 
 from tmf_checker.checks import (
     Context,
@@ -14,6 +15,7 @@ from tmf_checker.checks import (
     lists,
     missing,
     patch,
+    profile,
 )
 from tmf_checker.findings import Finding, unique_sorted
 from tmf_checker.spec import Resource
@@ -27,6 +29,7 @@ CHECKS: dict[str, tuple[CheckFn, bool]] = {
     "fields": (fields.run, False),
     "filters": (filters.run, False),
     "missing": (missing.run, False),
+    "profile": (profile.run, False),
     "location": (create.run_location, True),
     "requires": (create.run_requires, True),
     "roundtrip": (create.run_roundtrip, True),
@@ -38,8 +41,16 @@ DEFAULT_READ = ("errors", "lists", "fields", "filters")  # `missing` is opt-in: 
 DEFAULT_WRITE = ("location", "requires", "roundtrip", "polymorphism", "patch-formats", "patch")
 
 
-def default_checks(allow_writes: bool) -> list[str]:
-    return [*DEFAULT_READ, *(DEFAULT_WRITE if allow_writes else ())]
+# they read what the write checks created, so they run after them
+READ_LAST = ("missing", "profile")
+
+
+def default_checks(allow_writes: bool, with_profile: bool = False) -> list[str]:
+    return [
+        *DEFAULT_READ,
+        *(DEFAULT_WRITE if allow_writes else ()),
+        *(("profile",) if with_profile else ()),
+    ]
 
 
 def run(ctx: Context, checks: Iterable[str], resources: Iterable[str] = ()) -> list[Finding]:
@@ -51,8 +62,9 @@ def run(ctx: Context, checks: Iterable[str], resources: Iterable[str] = ()) -> l
             raise ValueError(f"unknown check {name!r} (known: {', '.join(CHECKS)})")
         if CHECKS[name][1] and not ctx.allow_writes:
             raise ValueError(f"check {name!r} writes to the API: pass --allow-writes")
-    # `missing` reads what the write checks created, so it runs after them
-    checks.sort(key=lambda name: name == "missing")
+        if name == "profile" and ctx.profile is None:
+            raise ValueError("check 'profile' needs --profile")
+    checks.sort(key=lambda name: name in READ_LAST)
     wanted = {r.strip("/") for r in resources}
     found: list[Finding] = []
     try:
@@ -75,4 +87,17 @@ def run(ctx: Context, checks: Iterable[str], resources: Iterable[str] = ()) -> l
                     )
     finally:
         found.extend(create.cleanup(ctx))
-    return unique_sorted(found)
+    return unique_sorted(_optional_operations(ctx, found))
+
+
+def _optional_operations(ctx: Context, found: list[Finding]) -> Iterator[Finding]:
+    """An operation the profile does not make mandatory may be unimplemented."""
+    for f in found:
+        if (
+            f.kind == "unimplemented"
+            and ctx.profile
+            and ctx.profile.optional_operation(f.method, f.path)
+        ):
+            yield replace(f, kind="skipped", detail="profile optional-operation")
+        else:
+            yield f

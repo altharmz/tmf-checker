@@ -19,6 +19,7 @@ make build          # sdist + wheel
 - `src/tmf_checker/spec.py` loader and schema walking (v4 Swagger 2.0, v5 OAS 3.0)
 - `src/tmf_checker/validate.py` TMF-aware validator (see its docstring)
 - `src/tmf_checker/cli.py` argparse CLI
+- `src/tmf_checker/profile.py` `--profile` conformance profile (rules in its docstring)
 - `src/tmf_checker/specs/` bundled specs, unmodified, provenance in its README
 - `docs/checks.md` check catalogue · `docs/spec-quirks.md` upstream quirks
 
