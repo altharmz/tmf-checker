@@ -76,7 +76,9 @@ check already reported (`unprobed`, `refused`, `dropped`, `read-only`) and lefto
 earlier runs. It looks one level into value objects, not into references or
 `...RefOrValue` unions. An attribute the server refuses from clients but fills in itself
 (an account balance) is still read one level in: that is where server-built values lack
-attributes. Use it on data known to be complete.
+attributes. A value the run itself sent (by POST or PATCH) is not read one level in: it
+lacks whatever the run left out (such as a nested `href`), and `roundtrip` already compared
+it with what was sent. Use it on data known to be complete.
 
 ## Values and fixtures
 

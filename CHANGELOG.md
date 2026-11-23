@@ -33,6 +33,9 @@ All notable changes are listed here. The format follows
 
 ### Fixed
 
+- `missing` no longer reports `a.b` for a value the run itself sent without `b` (seen on
+  FIWARE as `missing pricingLogicAlgorithm.href` and `missing tax.href`).
+
 - The validator accepts a TMF630 extension subtype inside a `...RefOrValue` (an unknown
   `@type` with a known `@baseType`) and validates it as that base type. A non-string
   `@type` is an error instead of a crash.

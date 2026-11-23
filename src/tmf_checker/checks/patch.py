@@ -46,6 +46,7 @@ def _patch(ctx: Context, resource: Resource, rid: str, body: Any, ctype: str) ->
         "PATCH", item_path(resource, rid), json_body=body, content_type=ctype
     )
     check_auth(response)
+    ctx.record_sent(resource.collection, rid, body)
     return response
 
 

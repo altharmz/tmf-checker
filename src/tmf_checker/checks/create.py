@@ -128,6 +128,7 @@ def post(ctx: Context, resource: Resource, body: Any) -> tuple[Response, dict[st
     created = _created_id(response, answer)
     if created is not None:
         ctx.created.append((resource, created))
+        ctx.record_sent(resource.collection, created, body)
     return response, answer
 
 

@@ -198,9 +198,11 @@ Work:
 - [ ] Composite GitHub Action (`action.yml`): install, `run` with a baseline, upload the
       HTML report.
 - [ ] README: a sample report (FIWARE TMF620, after notifying them), the fixtures file.
-- [ ] `missing` false positive: a nested attribute of a value the run itself sent without
-      it (FIWARE `pricingLogicAlgorithm.href`) is not the server's gap. Skip `a.b` on
-      created resources when the run's own body for `a` lacked `b`.
+- [x] `missing` false positive: a nested attribute of a value the run itself sent without
+      it (FIWARE `pricingLogicAlgorithm.href`) is not the server's gap. `Context.sent`
+      records the top-level attributes each created resource was sent (POST and PATCH);
+      `missing` reads one level into the other values only. The stub reproduced the two
+      FIWARE lines before the fix.
 - [ ] Not started, candidates: a robustness check (a 5xx for a spec-valid body; FIWARE
       answered 500 to a v4 `bundledProductOffering` without `id`), `missing` on TMF678
       with real bills (needs a target with billing history).
