@@ -172,13 +172,23 @@ is the human's call (draft an issue for the error body and `Location`).
 ### M3 task list (next)
 
 Decisions taken (the human, 2026-11-23):
-- **Contact FIWARE:** yes, an issue on their repository filed with `gh` (link below).
+- **Contact FIWARE:** yes. Filed
+  [FIWARE/tmforum-api#189](https://github.com/FIWARE/tmforum-api/issues/189) on
+  2026-11-23 after reproducing each finding with curl on 2.2.1 (still their latest
+  release): the malformed-JSON error body, no `Location`, `href` is the URN id. Left out:
+  `missing pricingLogicAlgorithm.href` / `tax.href` (M2), a probe artefact: the run sent
+  those values without `href` and FIWARE returned exactly what it was sent; `href` is
+  optional there. Also left out: `importJob`/`exportJob` 404 (not implemented, likely
+  known).
 - **Drop `openapi-schema-validator`:** yes. Done: a differential run of the old and new
   validator over 86,824 generated bodies (every schema of the ten bundled specs, with
   nulls, wrong types and dropped attributes) gave identical issues; the `date-time` check
   matched `rfc3339-validator` on 400,000 fuzzed strings except a trailing newline, which
   the library's `$` accepted and we now reject.
-- **Go public:** yes, now.
+- **Go public:** yes, now. Done: the private repository (PRs #1-#4, whose diffs named
+  a private test target) was renamed `altharmz/tmf-checker-private` and kept private; a
+  new public `altharmz/tmf-checker` starts from one squashed commit of the scrubbed tree,
+  with the same merge settings. Commits use the GitHub noreply address.
 
 Work:
 - [ ] FIWARE TMF637/666 v4 runs (images `quay.io/fiware/tmforum-product-inventory:2.2.1`,
@@ -188,6 +198,9 @@ Work:
 - [ ] Composite GitHub Action (`action.yml`): install, `run` with a baseline, upload the
       HTML report.
 - [ ] README: a sample report (FIWARE TMF620, after notifying them), the fixtures file.
+- [ ] `missing` false positive: a nested attribute of a value the run itself sent without
+      it (FIWARE `pricingLogicAlgorithm.href`) is not the server's gap. Skip `a.b` on
+      created resources when the run's own body for `a` lacked `b`.
 - [ ] Not started, candidates: a robustness check (a 5xx for a spec-valid body; FIWARE
       answered 500 to a v4 `bundledProductOffering` without `id`), `missing` on TMF678
       with real bills (needs a target with billing history).
@@ -212,7 +225,8 @@ Work:
 - [x] FIWARE TMF620 v4 again, with every M2 check: `requires`, `polymorphism`,
       `patch-formats` and `patch` find it conformant; the only new lines are `missing
       pricingLogicAlgorithm.href` and `missing tax.href` (embedded entities without an
-      `href`, a kind the private target locks too). FIWARE TMF637/666 v4: not run,
+      `href`, a kind the private target locks too; on FIWARE a probe artefact, see M3).
+      FIWARE TMF637/666 v4: not run,
       quay.io's CDN kept resetting the image downloads; first thing for M3.
 
 ### M2 exit (2026-11-22): against the private v5 target
