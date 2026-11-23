@@ -61,9 +61,10 @@ src/tmf_checker/
   client.py      urllib client: API root, extra headers, timeouts, redacted request log
   values.py      values for a schema; references to fixtures of the same API
   findings.py    Finding, kinds, line format, baseline compare and update
+  profile.py     (M4) --profile: user-supplied conformance profile, validated at load
   report.py      text and JSON (HTML in M2)
   runner.py      selected checks over every resource, then cleanup
-  checks/        errors, lists, fields, missing, create (location, roundtrip, cleanup)
+  checks/        errors, lists, fields, filters, missing, profile, create, patch
   fixtures/      (M2) YAML per API: how to create resources of other APIs
 tests/stub.py    spec-driven stub server, one switch per deliberate gap
 ```
@@ -108,7 +109,7 @@ so gaps are found by reading back:
 Order chosen by the human: TMF630 filters first, then a user-supplied conformance profile;
 hub events, more APIs and the robustness check after.
 
-- [ ] `filters` (branch `m4-filters`): equality filter `?attr=value` only, read-only, in the
+- [x] `filters` (PR #6): equality filter `?attr=value` only, read-only, in the
       default read set. The attribute is a top-level string of the resource schema with two
       different values in the listed items (else `skipped filters no-distinct-values`), so
       an ignored filter is visible on the same page. **Decision:** comma lists (`a,b` as
@@ -118,7 +119,16 @@ hub events, more APIs and the robustness check after.
       filter criteria"), so the kinds are `filter-*`, not `param-refused`. FIWARE TMF620 v4
       (fresh database, 3 resources per collection): no line, and its answers to
       `lifecycleStatus=Active` and `=In Design` were read and are right.
-- [ ] Conformance profile (YAML of mandatory attributes and operations), after `filters`.
+- [ ] Conformance profile (branch `m4-profile`): `run --profile FILE`, YAML keyed by
+      collection with `operations`, `attributes`, `create` (docs/checks.md). **Decisions:**
+      our own format (TM Forum's profiles are member-only documents, nothing to parse); a
+      mandatory attribute must be in *every* returned resource (what a CTK checks), unlike
+      `missing`, so it is not opt-in once a profile is given; `a.b` one level in, judged only
+      where `a` is present; an operation left out of `operations` turns `unimplemented` into
+      a skip, an absent `operations` key changes nothing; `create` attributes join the base
+      body rather than filtering `requires` lines afterwards, so no discovery runs for them;
+      names are validated against the spec at load (exit 2). Not done: PATCH-able
+      attributes, mandatory filters and query parameters, per-operation response attributes.
 
 ### M1 task list (done 2026-11-22, branch `m1-spike`)
 

@@ -13,6 +13,7 @@ from urllib.parse import quote
 
 from tmf_checker.client import Client, Response
 from tmf_checker.findings import Finding
+from tmf_checker.profile import Profile
 from tmf_checker.spec import Resource, Spec
 from tmf_checker.validate import issues
 
@@ -60,6 +61,7 @@ class Context:
     building: set[str] = field(default_factory=set)  # fixtures being created (cycle guard)
     # (collection, attribute path) a write check already reported: missing skips them
     explained: set[tuple[str, str]] = field(default_factory=set)
+    profile: Profile | None = None  # --profile
 
     def record_sent(self, collection: str, resource_id: str, body: Any) -> None:
         if isinstance(body, dict):

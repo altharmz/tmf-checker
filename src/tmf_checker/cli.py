@@ -11,7 +11,7 @@ from pathlib import Path
 
 import yaml
 
-from tmf_checker import __version__, report, runner
+from tmf_checker import __version__, profile, report, runner
 from tmf_checker.checks import Context, Unauthorized
 from tmf_checker.client import Client, TransportError
 from tmf_checker.findings import compare, read_baseline, updated_baseline
@@ -97,7 +97,12 @@ def _api_label(args: argparse.Namespace) -> str:
 
 def _cmd_run(args: argparse.Namespace) -> int:
     spec = _spec(args)
-    checks = args.checks.split(",") if args.checks else runner.default_checks(args.allow_writes)
+    rules = profile.load(args.profile, spec) if args.profile else None
+    checks = (
+        args.checks.split(",")
+        if args.checks
+        else runner.default_checks(args.allow_writes, rules is not None)
+    )
     client = Client(args.base_url, _headers(args.header), timeout=args.timeout)
     run_id = secrets.token_hex(3)
     fixtures, preferred = _fixtures(args.fixtures)
@@ -112,6 +117,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
         allow_orders=args.allow_orders,
         fixtures=fixtures,
         preferred=preferred,
+        profile=rules,
     )
     try:
         findings = runner.run(ctx, checks, args.resource)
@@ -131,6 +137,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
         "run_id": run_id,
         "base_url": client.base_url,
         "checks": checks,
+        **({"profile": args.profile} if args.profile else {}),
     }
     if args.json:
         Path(args.json).write_text(report.as_json(findings, meta), encoding="utf-8")
@@ -225,6 +232,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--fixtures",
         help="YAML: existing resources that bodies may reference, by class (Party, "
         "BillingAccount, ...); see docs/checks.md",
+    )
+    run.add_argument(
+        "--profile",
+        help="YAML conformance profile: mandatory operations and attributes, and what a "
+        "create must carry, per collection; adds the profile check (see docs/checks.md)",
     )
     run.add_argument("--json", help="also write a JSON report with evidence to this file")
     run.add_argument("--html", help="also write an HTML report with evidence to this file")

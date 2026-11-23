@@ -38,7 +38,7 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from tmf_checker.checks import Context, Forbidden, check_auth, item_path
+from tmf_checker.checks import NOT_IMPLEMENTED, Context, Forbidden, check_auth, item_path
 from tmf_checker.client import Response
 from tmf_checker.findings import Finding
 from tmf_checker.spec import Resource
@@ -165,6 +165,7 @@ def base_create(ctx: Context, resource: Resource) -> Creation:
     try:
         with values(ctx).scope(resource.schema):
             minimal = values(ctx).minimal(schema)
+            minimal.update(_profile_create(ctx, resource, schema, minimal))
     except Unbuildable as exc:
         creation.skip = str(exc)
         return creation
@@ -172,6 +173,13 @@ def base_create(ctx: Context, resource: Resource) -> Creation:
         ctx.building.discard(key)
     try:
         response, answer = post(ctx, resource, minimal)
+        if (
+            response.status in NOT_IMPLEMENTED
+            and ctx.profile
+            and ctx.profile.optional_operation("POST", resource.collection)
+        ):
+            creation.skip = "optional-operation"
+            return creation
         if 400 <= response.status < 500:
             _discover(ctx, resource, schema, minimal, response, creation)
             return creation
@@ -192,6 +200,19 @@ def base_create(ctx: Context, resource: Resource) -> Creation:
     return creation
 
 
+def _profile_create(
+    ctx: Context, resource: Resource, schema: dict[str, Any], minimal: dict[str, Any]
+) -> dict[str, Any]:
+    """The attributes the --profile makes mandatory on create, which the spec does not."""
+    rules = ctx.profile.get(resource) if ctx.profile else None
+    props = ctx.spec.properties(schema)
+    return {
+        name: values(ctx).value(props[name], name)
+        for name in (rules.create if rules else ())
+        if name not in minimal
+    }
+
+
 def _discover(
     ctx: Context,
     resource: Resource,
@@ -204,6 +225,8 @@ def _discover(
     path = resource.collection
     extra: dict[str, Any] = {}
     for name, sub in probe_attributes(ctx, schema).items():
+        if name in minimal:
+            continue  # the --profile's create attributes: in the base already
         try:
             with values(ctx).scope(resource.schema):
                 extra[name] = values(ctx).value(sub, name)

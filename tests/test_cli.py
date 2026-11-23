@@ -149,3 +149,17 @@ def test_fixtures_file_is_validated(capsys, tmp_path):
 def test_allow_orders_needs_allow_writes(capsys):
     code, _, err = _run(capsys, None, "--allow-orders")
     assert code == 2 and "--allow-writes" in err
+
+
+def test_profile_adds_the_profile_check(capsys, tmp_path):
+    path = tmp_path / "profile.yaml"
+    path.write_text("productOffering:\n  attributes: [name, version]\n")
+    code, out, _ = _run(capsys, None, "--profile", str(path))
+    assert code == 1 and out == "TMF620 GET /productOffering profile-missing version\n"
+
+
+def test_profile_file_is_validated(capsys, tmp_path):
+    path = tmp_path / "profile.yaml"
+    path.write_text("productOffering:\n  attributes: [nope]\n")
+    code, _, err = _run(capsys, None, "--profile", str(path))
+    assert code == 2 and "has no attribute 'nope'" in err
