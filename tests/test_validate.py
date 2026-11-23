@@ -7,9 +7,6 @@ satisfies both branches, so only the discriminator can pick one.
 
 import jsonschema
 import pytest
-from openapi_schema_validator import OAS30Validator
-from referencing import Registry, Resource
-from referencing.jsonschema import DRAFT4
 
 from tmf_checker.spec import BUNDLED, Spec
 from tmf_checker.validate import errors
@@ -44,15 +41,34 @@ def test_plain_jsonschema_cannot_validate_the_same_ref():
     assert "valid under each of" in found[0]
 
 
-def test_library_discriminator_handling_recurses_on_tmf_schemas():
-    """Why TmfValidator overrides it: upstream dispatches on the self-mapping discriminator
-    next to allOf and never returns."""
-    registry = Registry().with_resource(
-        "urn:x", Resource(contents=_tmf620().doc, specification=DRAFT4)
-    )
-    upstream = OAS30Validator({"$ref": "urn:x#/components/schemas/Error"}, registry=registry)
-    with pytest.raises(RecursionError):
-        list(upstream.iter_errors({"@type": "Error", "code": "404", "reason": "Not Found"}))
+def test_self_mapping_discriminator_next_to_allof_does_not_recurse():
+    """docs/spec-quirks.md #1: every v5 schema maps its own name to itself next to allOf.
+    Stock OAS validators dispatch on it and recurse forever; here it is an annotation."""
+    error = {"@type": "Error", "code": "404", "reason": "Not Found"}
+    assert errors(_tmf620(), "Error", error) == []
+    assert any("'reason'" in e for e in errors(_tmf620(), "Error", {"@type": "Error", "code": "4"}))
+
+
+def _mini(**props) -> Spec:
+    schema = {"type": "object", "required": list(props), "properties": props}
+    return Spec({"openapi": "3.0.1", "components": {"schemas": {"T": schema}}}, "mini")
+
+
+def test_nullable_admits_null_both_ways():
+    assert errors(_mini(a={"type": "string", "nullable": True}), "T", {"a": None}) == []
+    assert errors(_mini(a={"type": "string"}), "T", {"a": None}) != []
+    assert errors(_mini(a={"type": "string", "nullable": False}), "T", {"a": None}) != []
+
+
+def test_required_read_only_and_write_only_may_be_absent():
+    for flag in ("readOnly", "writeOnly"):
+        assert errors(_mini(a={"type": "string", flag: True}), "T", {}) == []
+    assert errors(_mini(a={"type": "string"}), "T", {}) == ["<root>: 'a' is a required property"]
+
+
+def test_null_is_not_format_checked():
+    nullable = {"type": "string", "format": "date-time", "nullable": True}
+    assert errors(_mini(a=nullable), "T", {"a": None}) == []
 
 
 def test_discriminator_picks_the_branch_named_by_type():
@@ -171,6 +187,16 @@ def test_date_time_is_format_checked_both_ways():
 
     spec = _tmf620()
     assert issues(spec, "ProductOffering", _offering()) == []
-    for bad in ("2026-01-01T00:00:00", "2026-01-01T00:00:00.000+0000", "yesterday"):
+    for good in ("2024-02-29t23:59:59.5z", "2026-01-01T00:00:00+05:30"):
+        assert issues(spec, "ProductOffering", _offering(lastUpdate=good)) == [], good
+    for bad in (
+        "2026-01-01T00:00:00",
+        "2026-01-01T00:00:00.000+0000",
+        "yesterday",
+        "2023-02-29T00:00:00Z",
+        "2026-01-01 00:00:00Z",
+        "2026-01-01T00:00:60Z",
+        "2026-01-01T00:00:00Z\n",
+    ):
         found = issues(spec, "ProductOffering", _offering(lastUpdate=bad))
         assert [(i.path, i.keyword) for i in found] == [("lastUpdate", "format:date-time")], bad

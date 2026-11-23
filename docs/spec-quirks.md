@@ -5,7 +5,7 @@ it was seen and what tmf-checker does about it. Add new ones with a source.
 
 | # | Quirk | Seen in | What we do |
 |---|-------|---------|------------|
-| 1 | Every v5 schema has a `discriminator` mapping its own name to itself next to `allOf`. Stock OAS validators (openapi-schema-validator) follow it and recurse forever. | all bundled v5 specs | `validate.TmfValidator` treats `allOf`/`anyOf` as plain JSON Schema. Proven in `tests/test_validate.py`. |
+| 1 | Every v5 schema has a `discriminator` mapping its own name to itself next to `allOf`. Stock OAS validators (openapi-schema-validator 0.9, used until M3) follow it and recurse forever. | all bundled v5 specs | `validate.TmfValidator` treats `allOf`/`anyOf` as plain JSON Schema. Proven in `tests/test_validate.py`. |
 | 2 | `...RefOrValue` is a `oneOf` of two permissive schemas, so a plain reference is valid under both and plain JSON Schema rejects it. | all v5 specs | A `oneOf` with a discriminator validates only the branch `@type` selects. |
 | 3 | v4 `basePath` includes `/tmf-api/...` with a trailing slash. TMF620 v5's server URL is `https://serverRoot/productCatalogManagement/v5/` without `/tmf-api`. TMF622, TMF637, TMF666 and TMF678 v5 declare only `https://serverRoot`, with no API path at all. | bundled specs | The base path cannot be derived from a v5 spec. The user always gives the API root URL. |
 | 4 | v4 PATCH declares only `application/json;charset=utf-8`. v5 PATCH declares four types: `application/json`, `application/merge-patch+json`, `application/json-patch+json` and `application/json-patch-query+json` (TMF630). | bundled specs | The PATCH-format check probes what each spec declares. |
