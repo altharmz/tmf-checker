@@ -193,11 +193,16 @@ Decisions taken (the human, 2026-11-23):
 Work:
 - [ ] FIWARE TMF637/666 v4 runs (images `quay.io/fiware/tmforum-product-inventory:2.2.1`,
       `tmforum-account:2.2.1`; quay's CDN failed on 2026-11-22, retry).
-- [ ] `v0.1.0`: version bump, CHANGELOG release section, `make build` check.
-- [ ] PyPI via trusted publishing (a release workflow; the PyPI project needs the human).
-- [ ] Composite GitHub Action (`action.yml`): install, `run` with a baseline, upload the
+- [x] `v0.1.0`: version bump, CHANGELOG release section, `make build` check. The tag
+      `v0.1.0` is pushed once the PyPI trusted publisher exists.
+- [x] PyPI via trusted publishing: `.github/workflows/release.yml` (tag `v*`: tests, tag
+      equals `__version__`, build, publish from environment `pypi`, GitHub release with the
+      CHANGELOG section). The pending publisher on PyPI is the human's step.
+- [x] Composite GitHub Action (`action.yml`): install, `run` with a baseline, upload the
       HTML report.
-- [ ] README: a sample report (FIWARE TMF620, after notifying them), the fixtures file.
+- [x] README: a sample report (FIWARE TMF620, linked to the FIWARE issue), the fixtures
+      file, the Action. The Action installs from its own ref (no PyPI needed) and is tested
+      end to end in CI against `tests/serve.py`.
 - [ ] `missing` false positive: a nested attribute of a value the run itself sent without
       it (FIWARE `pricingLogicAlgorithm.href`) is not the server's gap. Skip `a.b` on
       created resources when the run's own body for `a` lacked `b`.

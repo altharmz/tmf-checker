@@ -6,6 +6,8 @@ All notable changes are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-23
+
 ### Added
 
 - TMF620, TMF622, TMF637, TMF666 and TMF678 specs, v4 and v5, with upstream provenance.
