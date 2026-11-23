@@ -26,6 +26,7 @@ with a reason, and the caller skips with it.
 
 from __future__ import annotations
 
+import re
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Iterator
 from contextlib import contextmanager
@@ -163,9 +164,15 @@ class Values:
         return name.endswith("Ref") or "@referredType" in props or name.startswith("Bundled")
 
     def targets(self, schema_name: str) -> list[str]:
-        """The classes a reference schema may point at, longest name first."""
-        name = class_name(schema_name).removesuffix("OrValue").removesuffix("Ref")
-        return [c for c in self.classes if c in name]
+        """The classes a reference schema may point at, longest name first.
+
+        Each referenced name (`RelatedPartyRefOrPartyRoleRef`: `RelatedParty`, `PartyRole`)
+        is the class or ends with it (`RelatedParty` is a `Party`, `BundledProductOffering`
+        a `ProductOffering`). A class that only starts the name is another class:
+        `ProductOfferingRef` never points at a `Product`."""
+        name = class_name(schema_name).removesuffix("OrValue")
+        parts = [p for p in re.split(r"RefOr|Ref$", name) if p]
+        return [c for c in self.classes if any(p.endswith(c) for p in parts)]
 
     def target(self, schema_name: str) -> str | None:
         found = self.targets(schema_name)

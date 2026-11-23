@@ -216,6 +216,25 @@ Work:
       answered 500 to a v4 `bundledProductOffering` without `id`), `missing` on TMF678
       with real bills (needs a target with billing history).
 
+### FIWARE TMF637 and TMF666 v4 (2026-11-23)
+
+`tmforum-product-inventory` and `tmforum-account` 2.2.1 with Orion-LD 1.9.0, plus FIWARE's
+party (TMF632) and catalog (TMF620) services for fixtures: an individual, an offering, a
+specification, a price, a billing account, all created through their APIs. The images came
+over HTTP through the registry API (the Docker daemon could not reach quay.io's CDN).
+Every check, writes and `missing` included; every line read from its evidence.
+
+| API | Lines | Verdict |
+|---|---|---|
+| both | `error-body malformed-json` (TMF637 1, TMF666 7), `location missing` (1, 7), `href not-a-url` (1, 7) | **Real**, the three kinds already in FIWARE/tmforum-api#189 for TMF620 |
+| TMF666 | `null-value relatedParty[].name` (9): a party reference sent without `name` comes back with `"name": null` | **Real by the OAS** (Swagger 2.0 has no null), minor |
+| TMF637 | `refused` / `read-only` `productOffering`, `productSpecification`, `productPrice` | **tmf-checker bug, fixed**: `values.targets` matched `Product` as a substring of `ProductOfferingRef`, so the run referenced a created Product and FIWARE rightly refused it. With fixtures from the catalog, all three round-trip with no gap |
+| TMF666 | `missing` x14 per account type, `null-value relatedParty` | **Test data**: the first run's seed records had no `relatedParty` (FIWARE checks references, so no party, no account); gone with a party fixture |
+
+FIWARE checks that references exist (400 "At least one of the references does not exist"),
+so write checks need fixtures for every cross-API reference. Stores what it accepts:
+`roundtrip`, `patch`, `requires` and `polymorphism` found nothing on either API.
+
 ### M2 task list (done 2026-11-22, branch `m2`)
 
 - [x] `--fixtures FILE` (YAML): existing resources by class, for references to other APIs;
