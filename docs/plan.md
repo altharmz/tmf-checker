@@ -203,9 +203,11 @@ Work:
 - [x] README: a sample report (FIWARE TMF620, linked to the FIWARE issue), the fixtures
       file, the Action. The Action installs from its own ref (no PyPI needed) and is tested
       end to end in CI against `tests/serve.py`.
-- [ ] `missing` false positive: a nested attribute of a value the run itself sent without
-      it (FIWARE `pricingLogicAlgorithm.href`) is not the server's gap. Skip `a.b` on
-      created resources when the run's own body for `a` lacked `b`.
+- [x] `missing` false positive: a nested attribute of a value the run itself sent without
+      it (FIWARE `pricingLogicAlgorithm.href`) is not the server's gap. `Context.sent`
+      records the top-level attributes each created resource was sent (POST and PATCH);
+      `missing` reads one level into the other values only. The stub reproduced the two
+      FIWARE lines before the fix.
 - [ ] Not started, candidates: a robustness check (a 5xx for a spec-valid body; FIWARE
       answered 500 to a v4 `bundledProductOffering` without `id`), `missing` on TMF678
       with real bills (needs a target with billing history).
