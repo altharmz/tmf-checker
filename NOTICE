@@ -1,0 +1,12 @@
+tmf-checker
+Copyright 2026 Petr
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+It bundles TM Forum Open API specification files in src/tmf_checker/specs/, unmodified,
+from the tmforum-apis GitHub organization (https://github.com/tmforum-apis). They are
+Copyright TM Forum and licensed under the Apache License, Version 2.0. The source
+repository and pinned commit of each file are listed in src/tmf_checker/specs/README.md.
+
+TM Forum is a trademark of TM Forum. This project is not affiliated with or endorsed by
+TM Forum.

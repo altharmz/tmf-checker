@@ -1,0 +1,55 @@
+[project]
+name = "tmf-checker"
+dynamic = ["version"]
+description = "Check TM Forum Open API implementations against the published specs"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Petr" }]
+requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Telecommunications Industry",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Testing",
+]
+dependencies = [
+    "jsonschema>=4.23",
+    "openapi-schema-validator>=0.6",
+    "pyyaml>=6.0",
+    "referencing>=0.35",
+]
+
+[project.urls]
+Repository = "https://github.com/altharmz/tmf-checker"
+Issues = "https://github.com/altharmz/tmf-checker/issues"
+
+[project.scripts]
+tmf-checker = "tmf_checker.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.15"]
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/tmf_checker/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "scripts", "docs", "README.md", "LICENSE", "NOTICE", "CHANGELOG.md"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+ignore = ["S101"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
