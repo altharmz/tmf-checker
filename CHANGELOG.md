@@ -36,3 +36,6 @@ All notable changes are listed here. The format follows
 - The validator accepts a TMF630 extension subtype inside a `...RefOrValue` (an unknown
   `@type` with a known `@baseType`) and validates it as that base type. A non-string
   `@type` is an error instead of a crash.
+- A reference points only at the class it names: `ProductOfferingRef` was pointed at a
+  created Product (a substring match), so a server that checks references refused it and
+  tmf-checker reported `refused` and `read-only` lines (seen on FIWARE TMF637).
